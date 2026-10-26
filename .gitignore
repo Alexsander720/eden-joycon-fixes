@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.exe
+*.dll
+*.nsp
+*.xci
+*.keys
+*.jsonl
+.venv/
+build/
+local-results/

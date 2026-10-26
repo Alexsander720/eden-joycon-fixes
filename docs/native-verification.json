@@ -1,0 +1,11 @@
+{
+  "native_routing_cases_passed": 81,
+  "original_misrouting_cases_reproduced": 72,
+  "native_reply_cases_passed": 8,
+  "original_invalid_replies_reproduced": 4,
+  "native_retry_cases_passed": 5,
+  "rumble_fragments_unchanged": true,
+  "checksum_valid": true,
+  "unwind_entries_added": 10,
+  "candidate_sha256": "4a3662eb69f43fc06079285a0b2567397b6a6d05b19a1cefc632d42117ec821c"
+}

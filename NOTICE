@@ -1,0 +1,11 @@
+Independent community patch for Eden v0.2.1.
+
+The included C++ diff modifies source files attributed to the yuzu Emulator Project
+and Eden Emulator Project. Their SPDX copyright/license notices remain in the
+corresponding upstream files. The source revision is documented in README.md.
+
+The source changes and Python patching utilities are provided under GPL-3.0-or-later.
+The full GPL version 3 text is in LICENSE.
+
+Nintendo and Joy-Con are trademarks of Nintendo. This project is not affiliated
+with Nintendo or the official Eden project.

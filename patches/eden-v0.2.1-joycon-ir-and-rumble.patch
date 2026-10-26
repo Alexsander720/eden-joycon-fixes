@@ -1,0 +1,183 @@
+diff --git a/src/core/hle/service/hid/irs.cpp b/src/core/hle/service/hid/irs.cpp
+index 7d7368f..d2ae175 100644
+--- a/src/core/hle/service/hid/irs.cpp
++++ b/src/core/hle/service/hid/irs.cpp
+@@ -53,8 +53,6 @@ IRS::IRS(Core::System& system_) : ServiceFramework{system_, "irs"} {
+     u8* raw_shared_memory = system.Kernel().GetIrsSharedMem().GetPointer();
+     RegisterHandlers(functions);
+     shared_memory = std::construct_at(reinterpret_cast<StatusManager*>(raw_shared_memory));
+-
+-    npad_device = system.HIDCore().GetEmulatedController(Core::HID::NpadIdType::Player1);
+ }
+ IRS::~IRS() = default;
+ 
+@@ -85,6 +83,7 @@ Result IRS::StopImageProcessor(Core::IrSensor::IrCameraHandle camera_handle,
+     R_TRY(IsIrCameraHandleValid(camera_handle));
+ 
+     // TODO: Stop Image processor
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::Active);
+     R_SUCCEED();
+@@ -103,6 +102,7 @@ Result IRS::RunMomentProcessor(
+     MakeProcessorWithCoreContext<MomentProcessor>(camera_handle, device);
+     auto& image_transfer_processor = GetProcessor<MomentProcessor>(camera_handle);
+     image_transfer_processor.SetConfig(processor_config);
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::IR);
+ 
+@@ -122,6 +122,7 @@ Result IRS::RunClusteringProcessor(
+     MakeProcessorWithCoreContext<ClusteringProcessor>(camera_handle, device);
+     auto& image_transfer_processor = GetProcessor<ClusteringProcessor>(camera_handle);
+     image_transfer_processor.SetConfig(processor_config);
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::IR);
+ 
+@@ -148,6 +149,7 @@ Result IRS::RunImageTransferProcessor(
+     auto& image_transfer_processor = GetProcessor<ImageTransferProcessor>(camera_handle);
+     image_transfer_processor.SetConfig(processor_config);
+     image_transfer_processor.SetTransferMemoryAddress(t_mem->GetSourceAddress());
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::IR);
+ 
+@@ -190,6 +192,7 @@ Result IRS::RunTeraPluginProcessor(Core::IrSensor::IrCameraHandle camera_handle,
+     MakeProcessor<TeraPluginProcessor>(camera_handle, device);
+     auto& image_transfer_processor = GetProcessor<TeraPluginProcessor>(camera_handle);
+     image_transfer_processor.SetConfig(processor_config);
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::IR);
+ 
+@@ -227,6 +230,7 @@ Result IRS::RunPointingProcessor(
+     MakeProcessor<PointingProcessor>(camera_handle, device);
+     auto& image_transfer_processor = GetProcessor<PointingProcessor>(camera_handle);
+     image_transfer_processor.SetConfig(processor_config);
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::IR);
+ 
+@@ -296,6 +300,7 @@ Result IRS::RunImageTransferExProcessor(
+     auto& image_transfer_processor = GetProcessor<ImageTransferProcessor>(camera_handle);
+     image_transfer_processor.SetConfig(processor_config);
+     image_transfer_processor.SetTransferMemoryAddress(t_mem->GetSourceAddress());
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::IR);
+ 
+@@ -318,6 +323,7 @@ Result IRS::RunIrLedProcessor(Core::IrSensor::IrCameraHandle camera_handle,
+     MakeProcessor<IrLedProcessor>(camera_handle, device);
+     auto& image_transfer_processor = GetProcessor<IrLedProcessor>(camera_handle);
+     image_transfer_processor.SetConfig(processor_config);
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::IR);
+ 
+@@ -333,6 +339,7 @@ Result IRS::StopImageProcessorAsync(Core::IrSensor::IrCameraHandle camera_handle
+     R_TRY(IsIrCameraHandleValid(camera_handle));
+ 
+     // TODO: Stop image processor async
++    auto* npad_device = system.HIDCore().GetEmulatedControllerByIndex(camera_handle.npad_id);
+     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
+                                 Common::Input::PollingMode::Active);
+ 
+diff --git a/src/core/hle/service/hid/irs.h b/src/core/hle/service/hid/irs.h
+index 58dfee6..e58db8d 100644
+--- a/src/core/hle/service/hid/irs.h
++++ b/src/core/hle/service/hid/irs.h
+@@ -154,7 +154,6 @@ private:
+         return static_cast<T&>(*processors[index]);
+     }
+ 
+-    Core::HID::EmulatedController* npad_device = nullptr;
+     StatusManager* shared_memory = nullptr;
+     std::array<std::unique_ptr<ProcessorBase>, 9> processors{};
+ };
+diff --git a/src/hid_core/frontend/emulated_controller.cpp b/src/hid_core/frontend/emulated_controller.cpp
+index ef841e2..03c4e8b 100644
+--- a/src/hid_core/frontend/emulated_controller.cpp
++++ b/src/hid_core/frontend/emulated_controller.cpp
+@@ -1248,6 +1248,14 @@ bool EmulatedController::SetVibration(DeviceIndex device_index, const VibrationV
+     if (device_index >= DeviceIndex::MaxDeviceIndex) {
+         return false;
+     }
++    // A single Joy-Con has only its own vibration device. Some games activate
++    // both sides; the absent side must never reach the same physical motor.
++    const auto style = npad_type.load();
++    if ((style == NpadStyleIndex::JoyconLeft && device_index == DeviceIndex::Right) ||
++        (style == NpadStyleIndex::JoyconRight && device_index == DeviceIndex::Left)) {
++        return false;
++    }
++
+     const std::size_t index = static_cast<std::size_t>(device_index);
+     if (!output_devices[index]) {
+         return false;
+diff --git a/src/input_common/helpers/joycon_driver.cpp b/src/input_common/helpers/joycon_driver.cpp
+index 78df802..b2e9fd6 100644
+--- a/src/input_common/helpers/joycon_driver.cpp
++++ b/src/input_common/helpers/joycon_driver.cpp
+@@ -160,23 +160,25 @@ void JoyconDriver::InputThread(std::stop_token stop_token) {
+                                           ThreadDelay);
+         } else {
+             std::this_thread::sleep_for(std::chrono::milliseconds(ThreadDelay));
++            continue; // The configuration protocol exclusively owns the HID handle.
+         }
+ 
+         if (IsPayloadCorrect(status, buffer)) {
+             OnNewData(buffer);
+         }
+ 
++        // Obsolete HD samples must not be replayed after a Bluetooth/host stall.
++        // Keep the newest sample and let the original encoder preserve its waveform.
++        while (vibration_queue.Size() > 1) {
++            vibration_queue.Pop();
++        }
++
+         if (!vibration_queue.Empty()) {
+             VibrationValue vibration_value;
+             vibration_queue.Pop(vibration_value);
+             last_vibration_result = rumble_protocol->SendVibration(vibration_value);
+         }
+ 
+-        // We can't keep up with vibrations. Start skipping.
+-        while (vibration_queue.Size() > 6) {
+-            vibration_queue.Pop();
+-        }
+-
+         std::this_thread::yield();
+     }
+ 
+@@ -305,11 +307,14 @@ Common::Input::DriverResult JoyconDriver::SetPollingMode() {
+     }
+ 
+     if (irs_enabled && supported_features.irs) {
+-        auto result = irs_protocol->EnableIrs();
+-        if (result == Common::Input::DriverResult::Success) {
+-            return result;
++        Common::Input::DriverResult result{};
++        for (int attempt = 0; attempt < 3; ++attempt) {
++            result = irs_protocol->EnableIrs();
++            if (result == Common::Input::DriverResult::Success) {
++                return result;
++            }
++            irs_protocol->DisableIrs();
+         }
+-        irs_protocol->DisableIrs();
+         LOG_ERROR(Input, "Error enabling IRS");
+         return result;
+     }
+diff --git a/src/input_common/helpers/joycon_protocol/common_protocol.cpp b/src/input_common/helpers/joycon_protocol/common_protocol.cpp
+index e825afa..5b2f8c6 100644
+--- a/src/input_common/helpers/joycon_protocol/common_protocol.cpp
++++ b/src/input_common/helpers/joycon_protocol/common_protocol.cpp
+@@ -91,7 +91,7 @@ Common::Input::DriverResult JoyconCommonProtocol::GetSubCommandResponse(
+         if (tries++ > MaxTries) {
+             return Common::Input::DriverResult::Timeout;
+         }
+-    } while (output.input_report.report_mode != ReportMode::SUBCMD_REPLY &&
++    } while (output.input_report.report_mode != ReportMode::SUBCMD_REPLY ||
+              output.sub_command != sc);
+ 
+     return Common::Input::DriverResult::Success;
